@@ -285,11 +285,6 @@ public:
     }
 };
 
-template<typename reg_type>
-void LD(reg_type from, reg_type &to)
-{
-    to = from;
-}
 
 
 
