@@ -22,7 +22,7 @@ public:
     {
         std::cout << "\n\n--------------------------------------\n";
         std::cout << "z80 on terminal:\n";
-        std::cout << "  AF: 0x" << std::hex << (uint16_t)processor.AF.r16 << " --> A: 0x" << std::hex << (uint16_t)processor.AF.r8.msb << "  F: 0x" << std::hex << (uint16_t)processor.AF.r8.lsb << "\n";
+        std::cout << "  AF: 0x" << std::hex << (uint16_t)processor.AF.r16 << " --> A: 0x" << std::hex << (uint16_t)processor.AF.r8.msb << "  F: 0x" /**<< std::hex << (uint16_t)processor.AF.r8.lsb.C **/<< "\n";
         std::cout << "  BC: 0x" << std::hex << (uint16_t)processor.BC.r16 << " --> B: 0x" << std::hex << (uint16_t)processor.BC.r8.msb << "  C: 0x" << std::hex << (uint16_t)processor.BC.r8.lsb << "\n";
         std::cout << "  DE: 0x" << std::hex << (uint16_t)processor.DE.r16 << " --> D: 0x" << std::hex << (uint16_t)processor.DE.r8.msb << "  E: 0x" << std::hex << (uint16_t)processor.DE.r8.lsb << "\n";
         std::cout << "  HL: 0x" << std::hex << (uint16_t)processor.HL.r16 << " --> H: 0x" << std::hex << (uint16_t)processor.HL.r8.msb << "  L: 0x" << std::hex << (uint16_t)processor.HL.r8.lsb << "\n\n";

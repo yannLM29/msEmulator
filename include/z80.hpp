@@ -1,17 +1,19 @@
 #pragma once
 
+#include <functional>
 #include "register-types.hpp"
 #include "ram.hpp"
+#include "instruction-table.hpp"
 
 namespace ms
 {
 
-    
 class z80
 {
 
 public:     // a changer
-    Register2x8b BC, DE, HL, AF;
+    Register2x8b BC, DE, HL;
+    Register2x8b_with_flag AF;
     Register2x8b AFp, BCp, DEp, HLp;
 
     Register16b IX, IY, SP;
@@ -24,6 +26,20 @@ public:     // a changer
     uint16_t to_read;
     uint16_t to_write;
 
+
+    struct Instruction
+    {
+        std::string instruction_name;
+        int opcode_1st_byte;
+        int opcode_length;
+        void(z80::*from)(void) = nullptr;
+        void(z80::*to)(void) = nullptr;
+        void(z80::*instruction)(void) = nullptr;
+        int cycles;
+
+    };
+    std::vector<Instruction> instruction_table;
+
 private:
     Ram &cpu_ram_;
 
@@ -32,6 +48,11 @@ public:
     // ~z80();
 
     void reset() noexcept;
+
+    void fetch()
+    {
+        
+    }
 
     // ---------------- Addressing ----------------
     // -------- DataFrom --------
@@ -283,6 +304,36 @@ public:
         to_write |= (uint16_t)cpu_ram_.read(SP) << 8;
         SP++;
     }
+    void EXX()
+    {
+        
+    }
+    void ADD_A()
+    {
+        AF.r8.msb += uint8_t(to_read);
+        // if()
+        // {
+        //     AF.r8.lsb.C = 1
+        // }
+    }
+    void ADC_A()
+    {
+        AF.r8.msb += uint8_t(to_read) + AF.r8.lsb.C;
+    }
+
+    // void readRomFile(std::string path)
+    // {
+
+    //     auto current_instruction = instruction_table[read(PC)]
+    //     this.opcode = copy(PC, PC + current_instruction.length);
+
+    //     current_insctruction.from();
+    //     current_insctruction.instruction();
+    //     current_insctruction.to();
+
+    //     PC+=current_insctruction.length
+    //     cycles+= current_insctruction.cycles
+    // }
 };
 
 

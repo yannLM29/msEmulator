@@ -9,8 +9,6 @@ struct DoubleRegister
 {
     uint16_t lsb : 8;
     uint16_t msb : 8;
-    
-
 };
 
 union Register2x8b
@@ -34,4 +32,15 @@ struct StateRegister
     uint8_t S:1;
 };
 
+struct DoubleRegisterWithState
+{
+    StateRegister lsb;
+    uint8_t msb : 8;
+};
+
+union Register2x8b_with_flag
+{
+    uint16_t r16;
+    DoubleRegisterWithState r8;
+};
 }
