@@ -20,6 +20,7 @@ public:     // a changer
 
     Register16b PC;
     
+    std::vector<uint8_t>current_opcode;
     uint16_t to_read;
     uint16_t to_write;
 
@@ -32,36 +33,98 @@ public:
 
     void reset() noexcept;
 
-
+    // ---------------- Addressing ----------------
     // -------- DataFrom --------
     // ---- Registers ----
-    void DataFromR_A(std::vector<uint8_t>opcode)
+    // -- 8 bits --
+    void DataFromRegA()
     {
         to_read = (uint16_t)AF.r8.msb;
     }
-    void DataFromR_B()
+    void DataFromRegB()
     {
         to_read = (uint16_t)BC.r8.msb;
     }
-    void DataFromR_C()
+    void DataFromRegC()
     {
         to_read = (uint16_t)BC.r8.lsb;
     }
-    void DataFromR_D()
+    void DataFromRegD()
     {
         to_read = (uint16_t)DE.r8.msb;
     }
-    void DataFromR_E()
+    void DataFromRegE()
     {
         to_read = (uint16_t)DE.r8.lsb;
     }
-    void DataFromR_H()
+    void DataFromRegH()
     {
         to_read = (uint16_t)HL.r8.msb;
     }
-    void DataFromR_L()
+    void DataFromRegL()
     {
         to_read = (uint16_t)HL.r8.lsb;
+    }
+    void DataFromRegI()
+    {
+        to_read = (uint16_t)I;
+    }
+    void DataFromRegR()
+    {
+        to_read = (uint16_t)R;
+    }
+
+    // -- 16 bits --
+    void DataFromRegAF()
+    {
+        to_read = AF.r16;
+    }
+    void DataFromRegBC()
+    {
+        to_read = BC.r16;
+    }
+    void DataFromRegDE()
+    {
+        to_read = DE.r16;
+    }
+    void DataFromRegHL()
+    {
+        to_read = HL.r16;
+    }
+    void DataFromRegIX()
+    {
+        to_read = IX;
+    }
+    void DataFromRegIY()
+    {
+        to_read = IY;
+    }
+    void DataFromRegAFp()
+    {
+        to_read = AFp.r16;
+    }
+    void DataFromRegBCp()
+    {
+        to_read = BCp.r16;
+    }
+    void DataFromRegDEp()
+    {
+        to_read = DEp.r16;
+    }
+    void DataFromRegHLp()
+    {
+        to_read = HLp.r16;
+    }
+    
+
+    // ---- Direct ----
+    void DataFromN()
+    {
+        to_read = (uint16_t)current_opcode.back();
+    }
+    void DataFromNN()
+    {
+        to_read = (uint16_t)current_opcode.back() << 8 | (uint16_t)current_opcode[current_opcode.size()-1];
     }
 
     // ---- Adresses ----
@@ -69,46 +132,156 @@ public:
     {
         to_read = (uint16_t)cpu_ram_.read(HL.r16);
     }
+    void DataFromBCaddr()
+    {
+        to_read = (uint16_t)cpu_ram_.read(BC.r16);
+    }
+    void DataFromDEaddr()
+    {
+        to_read = (uint16_t)cpu_ram_.read(DE.r16);
+    }
+    void DataFromIX_daddr()
+    {
+        to_read = (uint16_t)cpu_ram_.read(IX + (uint16_t)current_opcode[2]);
+    }
+    void DataFromIY_daddr()
+    {
+        to_read = (uint16_t)cpu_ram_.read(IY + (uint16_t)current_opcode[2]);
+    }
+    void DataFromNNaddr()
+    {
+        to_read = (uint16_t)cpu_ram_.read(IY + ((uint16_t)current_opcode.back() << 8 | (uint16_t)current_opcode[current_opcode.size()-1]));
+    }
+
 
 
     // ---------------- DataTo ----------------
     // ---- Registers ----
-    void DataToR_A()
+    // -- 8 bits --
+    void DataToRegA()
     {
         AF.r8.msb = uint8_t(to_write);
     }
-
-    void DataToR_B()
+    void DataToRegB()
     {
         BC.r8.msb = uint8_t(to_write);
     }
-    void DataToR_C()
+    void DataToRegC()
     {
         BC.r8.lsb = uint8_t(to_write);
     }
-
-    void DataToR_D()
+    void DataToRegD()
     {
         DE.r8.msb = uint8_t(to_write);
     }
-    void DataToR_E()
+    void DataToRegE()
     {
         DE.r8.lsb = uint8_t(to_write);
     }
-
-    void DataToR_H()
+    void DataToRegH()
     {
         HL.r8.msb = uint8_t(to_write);
     }
-    void DataToR_L()
+    void DataToRegL()
     {
         HL.r8.lsb = uint8_t(to_write);
     }
     
+    // -- 16 bits --
+    void DataToRegAF()
+    {
+        AF.r16 = to_write;
+    }
+    void DataToRegBC()
+    {
+        BC.r16 = to_write;
+    }
+    void DataToRegDE()
+    {
+        DE.r16 = to_write;
+    }
+    void DataToRegHL()
+    {
+        HL.r16 = to_write;
+    }
+    void DataToRegAFp()
+    {
+        AFp.r16 = to_write;
+    }
+    void DataToRegBCp()
+    {
+        BCp.r16 = to_write;
+    }
+    void DataToRegDEp()
+    {
+        DEp.r16 = to_write;
+    }
+    void DataToRegHLp()
+    {
+        HLp.r16 = to_write;
+    }
+    void DataToRegIX()
+    {
+        IX = to_write;
+    }
+    void DataToRegIY()
+    {
+        IY = to_write;
+    }
+    void DataToRegSP()
+    {
+        SP = to_write;
+    }
+    
+
+    // ---- Addresses ----
+    void DataToHLaddr()
+    {
+        cpu_ram_.write(HL.r16, (uint8_t)to_write);
+    }
+    void DataToBCaddr()
+    {
+        cpu_ram_.write(BC.r16, (uint8_t)to_write);
+    }
+    void DataToDEaddr()
+    {
+        cpu_ram_.write(DE.r16, (uint8_t)to_write);
+    }
+    void DataToIX_daddr()
+    {
+        cpu_ram_.write(IX + (uint16_t)current_opcode[2], (uint8_t)to_write);
+    }
+    void DataToIY_daddr()
+    {
+        cpu_ram_.write(IY + (uint16_t)current_opcode[2], (uint8_t)to_write);
+    }
+    void DataToNNaddr()
+    {
+        cpu_ram_.write(IY + ((uint16_t)current_opcode.back() << 8 | (uint16_t)current_opcode[current_opcode.size()-1]), (uint8_t)to_write);
+    }
+    void DataToSPaddr()
+    {
+        cpu_ram_.write(SP, (uint8_t)to_write);
+    }
+
+    // ---------------- Instructions ----------------
     void LD()
     {
         to_write = to_read;
-
+    }
+    void PUSH()
+    {
+        SP--;
+        cpu_ram_.write(SP, (uint8_t)(to_read >> 8));
+        SP--;
+        cpu_ram_.write(SP, (uint8_t)to_read);
+    }
+    void POP()
+    {
+        to_write = (uint16_t)cpu_ram_.read(SP);
+        SP++;
+        to_write |= (uint16_t)cpu_ram_.read(SP) << 8;
+        SP++;
     }
 };
 

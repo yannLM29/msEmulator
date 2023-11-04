@@ -20,6 +20,7 @@ public:
 
     void showZ80Status(const z80 &processor)
     {
+        std::cout << "\n\n--------------------------------------\n";
         std::cout << "z80 on terminal:\n";
         std::cout << "  AF: 0x" << std::hex << (uint16_t)processor.AF.r16 << " --> A: 0x" << std::hex << (uint16_t)processor.AF.r8.msb << "  F: 0x" << std::hex << (uint16_t)processor.AF.r8.lsb << "\n";
         std::cout << "  BC: 0x" << std::hex << (uint16_t)processor.BC.r16 << " --> B: 0x" << std::hex << (uint16_t)processor.BC.r8.msb << "  C: 0x" << std::hex << (uint16_t)processor.BC.r8.lsb << "\n";
@@ -39,6 +40,19 @@ public:
         std::cout << "  R: 0x" << std::hex << (unsigned int)processor.R << "\n\n";
   
         std::cout << "  PC: 0x" << std::hex << (uint16_t)processor.PC << "\n";
+    }
+
+    void showRAMData(const Ram &ram, uint16_t from, uint16_t to)
+    {
+        for(int i = (int)from; i < (int)to; i++)
+        {
+            std::cout << "0x" << std::hex << (int)ram.read(i) << " ";
+            if(i % 16 == 0 && i > 0)
+            {
+                std::cout << "\n";
+            }
+        }
+        std::cout << "\n";
     }
 
 };

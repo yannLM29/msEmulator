@@ -12,9 +12,35 @@ int main()
     ms::z80 f(main_ram);
     
     std::unique_ptr<ms::DebugStrategy> a(std::make_unique<ms::DebugTerminal>());
-    
-    f.AF.r16 = 9;
+
     a->showZ80Status(f);
+
+    f.current_opcode.clear();
+    f.current_opcode.emplace_back(0b00111110);
+    f.current_opcode.emplace_back(0x05);
+    f.DataFromN();
+    f.LD();
+    f.DataToRegA();
+
+    a->showZ80Status(f);
+
+    f.DataFromRegA();
+    f.LD();
+    f.DataToRegB();
+
+    a->showZ80Status(f);
+
+    f.IX = 0;
+    f.current_opcode.clear();
+    f.current_opcode.emplace_back(0b00111110);
+    f.current_opcode.emplace_back(0x00);
+    f.current_opcode.emplace_back(0x05);
+
+    f.DataFromRegB();
+    f.LD();
+    f.DataToIX_daddr();
+
+    a->showRAMData(main_ram, 0, 2000);
 
     return 0;
 }
