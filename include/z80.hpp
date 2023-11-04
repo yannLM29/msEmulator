@@ -1,6 +1,7 @@
 #pragma once
 
 #include "register-types.hpp"
+#include "ram.hpp"
 
 namespace ms
 {
@@ -8,29 +9,28 @@ namespace ms
     
 class z80
 {
-    
+
+public:     // a changer
+    Register2x8b AF, BC, DE, HL;
+    Register2x8b AFp, BCp, DEp, HLp;
+
+    Register16b IX, IY, SP;
+
+    Register8b I, R;
+
+    Register16b PC;
+
 private:
-    ms::DoubleRegister AF, BC, DE, HL;
-    ms::DoubleRegister AFp, BCp, DEp, HLp;
-
-    ms::Register16b IX, IY, SP;
-
-    ms::Register8b I, R;
-
-    ms::Register16b PC;
+    Ram &cpu_ram_;
 
 public:
-    z80(/* args */);
-    ~z80();
+    z80(Ram &cpu_ram);
+    // ~z80();
+
+    void reset() noexcept;
 };
 
-z80::z80(/* args */)
-{
-}
 
-z80::~z80()
-{
-}
 
 
 
