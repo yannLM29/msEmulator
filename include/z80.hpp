@@ -296,10 +296,6 @@ public:
 
     // ---------------- Instructions ----------------
     // -------- Load Groups --------
-    void NOP()
-    {
-
-    }
     void LD()
     {
         to_write = to_read;
@@ -460,6 +456,7 @@ public:
         uint16_t extended_result = (uint16_t)AF.r8.msb + to_read ;
 
         AF.r8.msb += uint8_t(to_read);
+
         AF.r8.lsb.S = AF.r8.msb & 0x80 ? 1 : 0;
         AF.r8.lsb.C = (int(AF.r8.msb) + int(to_read) > 0xFF) ? 1 : 0;
         // AF.r8.lsb.H = ???
@@ -471,15 +468,16 @@ public:
     }
     void ADC_A()
     {
+        uint16_t extended_result = (uint16_t)AF.r8.msb + to_read + AF.r8.lsb.C ;
+
         AF.r8.msb += uint8_t(to_read) + AF.r8.lsb.C;
-        if(int(AF.r8.msb) + int(to_read) + int(AF.r8.lsb.C) > 0xFF)
-        {
-            AF.r8.lsb.C = 1;
-        }
-        else
-        {
-            AF.r8.lsb.C = 0;
-        }
+
+        AF.r8.lsb.S = AF.r8.msb & 0x80 ? 1 : 0;
+        AF.r8.lsb.C = (int(AF.r8.msb) + int(to_read) > 0xFF) ? 1 : 0;
+        // AF.r8.lsb.H = ???
+        AF.r8.lsb.PV = extended_result > 0xFF ? 1 : 0;
+        AF.r8.lsb.N = 0;
+        AF.r8.lsb.C = extended_result & 0x0100;
     }
     void INC_8bit()
     {
@@ -522,7 +520,47 @@ public:
         }
         
     }
+    // .....
 
+
+
+    // -------- General-Purpose Arithmetic and CPU Control Groups --------
+    void DAA()
+    {
+
+    }
+    void CPL()
+    {
+        AF.r8.msb = ~AF.r8.msb;
+
+        AF.r8.lsb.H = 1;
+        AF.r8.lsb.N = 1;
+    }
+    void NEG()
+    {
+        // AF.r8.msb |= ~(AF.r8.msb & 0x80);
+
+    }
+    void CCF()
+    {
+        AF.r8.lsb.H = AF.r8.lsb.C;
+        AF.r8.lsb.N = 0;
+        AF.r8.lsb.C = ~AF.r8.lsb.C;
+    }
+    void SCF()
+    {
+        AF.r8.lsb.H = 0;
+        AF.r8.lsb.N = 0;
+        AF.r8.lsb.C = 1;
+    }
+    void NOP()
+    {
+
+    }
+    void HALT()
+    {
+        
+    }
 
 
     void fetchAndExecute()
