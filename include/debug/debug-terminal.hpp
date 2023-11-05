@@ -55,6 +55,19 @@ public:
         std::cout << "\n";
     }
 
+    void showCartridgeData(const Cartridge &cartridge, uint16_t from, uint16_t to)
+    {
+        for(int i = (int)from; i < (int)to; i++)
+        {
+            std::cout << "0x" << std::hex << (int)cartridge.read(i) << " ";
+            if(i % 16 == 0 && i > 0)
+            {
+                std::cout << "\n";
+            }
+        }
+        std::cout << "\n";
+    }
+
 };
 
 

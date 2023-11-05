@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <stdexcept>
+#include <iostream>
 
 namespace ms
 {

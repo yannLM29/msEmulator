@@ -1,9 +1,12 @@
 #pragma once
 
 #include <functional>
+#include <memory>
+#include <algorithm>
+
 #include "register-types.hpp"
 #include "ram.hpp"
-#include "instruction-table.hpp"
+#include "cartridge.hpp"
 
 namespace ms
 {
@@ -22,15 +25,19 @@ public:     // a changer
 
     Register16b PC;
     
-    std::vector<uint8_t>current_opcode;
+    std::vector<uint8_t>current_instruction_words;
+
     uint16_t to_read;
     uint16_t to_write;
+
+
+    int cycles;
 
 
     struct Instruction
     {
         std::string instruction_name;
-        int opcode_1st_byte;
+        uint8_t opcode_1st_byte;
         int opcode_length;
         void(z80::*from)(void) = nullptr;
         void(z80::*to)(void) = nullptr;
@@ -42,6 +49,8 @@ public:     // a changer
 
 private:
     Ram &cpu_ram_;
+    // std::shared_ptr<Cartridge> cartridge_;
+    Cartridge *cartridge_;
 
 public:
     z80(Ram &cpu_ram);
@@ -141,11 +150,11 @@ public:
     // ---- Direct ----
     void DataFromN()
     {
-        to_read = (uint16_t)current_opcode.back();
+        to_read = (uint16_t)current_instruction_words.back();
     }
     void DataFromNN()
     {
-        to_read = (uint16_t)current_opcode.back() << 8 | (uint16_t)current_opcode[current_opcode.size()-1];
+        to_read = (uint16_t)current_instruction_words.back() << 8 | (uint16_t)current_instruction_words[current_instruction_words.size()-2];
     }
 
     // ---- Adresses ----
@@ -163,20 +172,20 @@ public:
     }
     void DataFromIX_daddr()
     {
-        to_read = (uint16_t)cpu_ram_.read(IX + (uint16_t)current_opcode[2]);
+        to_read = (uint16_t)cpu_ram_.read(IX + (uint16_t)current_instruction_words[2]);
     }
     void DataFromIY_daddr()
     {
-        to_read = (uint16_t)cpu_ram_.read(IY + (uint16_t)current_opcode[2]);
+        to_read = (uint16_t)cpu_ram_.read(IY + (uint16_t)current_instruction_words[2]);
     }
     void DataFromNNaddr()
     {
-        to_read = (uint16_t)cpu_ram_.read(IY + ((uint16_t)current_opcode.back() << 8 | (uint16_t)current_opcode[current_opcode.size()-1]));
+        to_read = (uint16_t)cpu_ram_.read(IY + ((uint16_t)current_instruction_words.back() << 8 | (uint16_t)current_instruction_words[current_instruction_words.size()-1]));
     }
 
 
 
-    // ---------------- DataTo ----------------
+    // -------- DataTo --------
     // ---- Registers ----
     // -- 8 bits --
     void DataToRegA()
@@ -270,15 +279,15 @@ public:
     }
     void DataToIX_daddr()
     {
-        cpu_ram_.write(IX + (uint16_t)current_opcode[2], (uint8_t)to_write);
+        cpu_ram_.write(IX + (uint16_t)current_instruction_words[2], (uint8_t)to_write);
     }
     void DataToIY_daddr()
     {
-        cpu_ram_.write(IY + (uint16_t)current_opcode[2], (uint8_t)to_write);
+        cpu_ram_.write(IY + (uint16_t)current_instruction_words[2], (uint8_t)to_write);
     }
     void DataToNNaddr()
     {
-        cpu_ram_.write(IY + ((uint16_t)current_opcode.back() << 8 | (uint16_t)current_opcode[current_opcode.size()-1]), (uint8_t)to_write);
+        cpu_ram_.write(IY + ((uint16_t)current_instruction_words.back() << 8 | (uint16_t)current_instruction_words[current_instruction_words.size()-1]), (uint8_t)to_write);
     }
     void DataToSPaddr()
     {
@@ -286,6 +295,11 @@ public:
     }
 
     // ---------------- Instructions ----------------
+    // -------- Load Groups --------
+    void NOP()
+    {
+
+    }
     void LD()
     {
         to_write = to_read;
@@ -304,36 +318,266 @@ public:
         to_write |= (uint16_t)cpu_ram_.read(SP) << 8;
         SP++;
     }
-    void EXX()
+
+    // -------- Exchange, Transfert and Search Group
+    // Les fonctions ci-dessous n'utilisent pas l'adressage car celui-ci n'est pas nécessaire ou pas adapté 
+    void EX_DE_HL()
     {
+        auto temp = HL;
+        HL = DE;
+        DE = temp;
+
+    }
+    void EX_AF_AFp()
+    {
+        auto temp = AF;
+        AF = *((Register2x8b_with_flag*)&AFp);
+        AFp = *((Register2x8b*)&temp);
+    }
+    void EXX_BC()
+    {
+        auto temp = BC;
+        BC = BCp;
+        BCp = temp;
+    }
+    void EXX_DE()
+    {
+        auto temp = DE;
+        DE = DEp;
+        DEp = temp;
+    }
+    void EXX_HL()
+    {
+        auto temp = HL;
+        HL = HLp;
+        HLp = temp;
+    }
+    void EX_SP_HL()
+    {
+        auto temp = HL;
+
+        HL.r8.msb = cpu_ram_.read(SP+1);
+        HL.r8.lsb = cpu_ram_.read(SP);
+
+        cpu_ram_.write(SP+1, temp.r8.msb);
+        cpu_ram_.write(SP, temp.r8.lsb);
+
+    }
+    void EX_SP_IX()
+    {
+        auto temp = IX;
+
+        IX = (int16_t)(cpu_ram_.read(SP+1)) << 8 | (int16_t)(cpu_ram_.read(SP));
+        
+        cpu_ram_.write(SP+1, uint8_t(IX >> 8));
+        cpu_ram_.write(SP, uint8_t(IX));
+
+    }
+    void EX_SP_IY()
+    {
+        auto temp = IY;
+
+        IY = (int16_t)(cpu_ram_.read(SP+1)) << 8 | (int16_t)(cpu_ram_.read(SP));
+        
+        cpu_ram_.write(SP+1, uint8_t(IY >> 8));
+        cpu_ram_.write(SP, uint8_t(IY));
+
+    }
+    void LDI()
+    {
+        cpu_ram_.write(DE.r16, cpu_ram_.read(HL.r16));
+        DE.r16++;
+        HL.r16++;
+        BC.r16--;
+
+        AF.r8.lsb.H = 0;
+        AF.r8.lsb.PV = BC.r16 != 0 ? 1 : 0;
+        AF.r8.lsb.N = 0;
+    }
+    void LDIR()
+    {
+        while (BC.r16 != 0)
+        {
+            LDI();
+        }
+
+        // cycles ??
         
     }
+    void LDD()
+    {
+        cpu_ram_.write(DE.r16, cpu_ram_.read(HL.r16));
+        DE.r16--;
+        HL.r16--;
+        BC.r16--;
+
+        AF.r8.lsb.H = 0;
+        AF.r8.lsb.PV = BC.r16 != 0 ? 1 : 0;
+        AF.r8.lsb.N = 0;
+    }
+    void LDDR()
+    {
+        while (BC.r16 != 0)
+        {
+            LDD();
+        }
+
+        // cycles ??
+        
+    }
+    void CPI()
+    {
+        int result = (int)AF.r8.msb - int(cpu_ram_.read(HL.r16));
+        HL.r16++;
+        BC.r16--;
+
+        AF.r8.lsb.S = result < 0 ? 1 : 0;
+        AF.r8.lsb.Z = result == 0 ? 1 : 0;
+        // AF.r8.lsb.H ???
+        AF.r8.lsb.PV = BC.r16 != 0 ? 1 : 0;
+        AF.r8.lsb.N = 1; 
+
+    }
+    void CPIR()
+    {
+
+    }
+    void CPD()
+    {
+
+    }
+    void CPDR()
+    {
+
+    }
+
+
+
+
+    // -------- Logic Groups --------
     void ADD_A()
     {
+        uint16_t extended_result = (uint16_t)AF.r8.msb + to_read ;
+
         AF.r8.msb += uint8_t(to_read);
-        // if()
-        // {
-        //     AF.r8.lsb.C = 1
-        // }
+        AF.r8.lsb.S = AF.r8.msb & 0x80 ? 1 : 0;
+        AF.r8.lsb.C = (int(AF.r8.msb) + int(to_read) > 0xFF) ? 1 : 0;
+        // AF.r8.lsb.H = ???
+        AF.r8.lsb.PV = extended_result > 0xFF ? 1 : 0;
+        AF.r8.lsb.N = 0;
+        AF.r8.lsb.C = extended_result & 0x0100;     // A vérifier
+        
+
     }
     void ADC_A()
     {
         AF.r8.msb += uint8_t(to_read) + AF.r8.lsb.C;
+        if(int(AF.r8.msb) + int(to_read) + int(AF.r8.lsb.C) > 0xFF)
+        {
+            AF.r8.lsb.C = 1;
+        }
+        else
+        {
+            AF.r8.lsb.C = 0;
+        }
+    }
+    void INC_8bit()
+    {
+        if(to_write == 0xFF)
+        {
+            to_read = 0;
+            AF.r8.lsb.C = 1;
+        }
+        else
+        {
+            to_write = to_read + 1;
+            AF.r8.lsb.C = 0;
+        }
+        
+    }
+    void INC_16bit()
+    {
+        if(to_write == 0xFFFF)
+        {
+            to_read = 0;
+            AF.r8.lsb.C = 1;
+        }
+        else
+        {
+            to_write = to_read + 1;
+            AF.r8.lsb.C = 0;
+        }
+    }
+    void DEC()
+    {
+        if(to_write == 0x00)
+        {
+            to_read = 0xFFFF;       // cast vers uint8_t --> 0xFF ??
+            AF.r8.lsb.N = 1;
+        }
+        else
+        {
+            to_write = to_read - 1;
+            AF.r8.lsb.N = 0;
+        }
+        
     }
 
-    // void readRomFile(std::string path)
-    // {
 
-    //     auto current_instruction = instruction_table[read(PC)]
-    //     this.opcode = copy(PC, PC + current_instruction.length);
 
-    //     current_insctruction.from();
-    //     current_insctruction.instruction();
-    //     current_insctruction.to();
+    void fetchAndExecute()
+    {
+        current_instruction_words.clear();
+        current_instruction_words.emplace_back(cartridge_->read(PC));
+        
+        std::cout << "PC = " << (int)PC << "\n";
+        std::cout << "reading " << current_instruction_words[0] << "\n";
+        
+        // auto current_instruction_type = instruction_table[current_instruction_words[0]];
+        // Solution temporaire a remplacer par la solution ci-dessus
+        auto current_instruction_type = std::find_if(instruction_table.begin(), instruction_table.end(), [&](const auto &ins){
+            return ins.opcode_1st_byte == current_instruction_words[0];
+        });
 
-    //     PC+=current_insctruction.length
-    //     cycles+= current_insctruction.cycles
-    // }
+        std::cout << "executing " << current_instruction_type->instruction_name << "\n";
+
+        for(int i = PC+1; i < PC + current_instruction_type->opcode_length; i++)
+        {
+            current_instruction_words.emplace_back(cartridge_->read(i));
+        }
+
+        for(auto &e : current_instruction_words)
+        {
+            std::cout << std::hex << (int)e << " ";
+        }
+        std::cout << "\n";
+
+        (this->*current_instruction_type->from)();
+        (this->*current_instruction_type->instruction)();
+        (this->*current_instruction_type->to)();
+
+        PC += current_instruction_type->opcode_length;
+        
+        cycles+= current_instruction_type->cycles;
+
+        
+    }
+
+    void executeCartridgeProgram()
+    {
+        PC = 0;
+        do
+        {
+           fetchAndExecute();
+        } while (PC < 2 || current_instruction_words[0] != 0);
+        
+        
+    }
+
+    void plugCartridge(Cartridge *cartridge)
+    {
+        cartridge_ = cartridge;
+    }
 };
 
 
