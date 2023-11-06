@@ -294,6 +294,12 @@ public:
         cpu_ram_.write(SP, (uint8_t)to_write);
     }
 
+    // ---------------- Opcodes analysers ----------------
+    uint8_t get_b()
+    {
+        return (current_instruction_words.back() & 0x38) >> 3;
+    }
+
     // ---------------- Instructions ----------------
     // -------- Load Groups --------
     void LD()
@@ -365,8 +371,8 @@ public:
 
         IX = (int16_t)(cpu_ram_.read(SP+1)) << 8 | (int16_t)(cpu_ram_.read(SP));
         
-        cpu_ram_.write(SP+1, uint8_t(IX >> 8));
-        cpu_ram_.write(SP, uint8_t(IX));
+        cpu_ram_.write(SP+1, uint8_t(temp >> 8));
+        cpu_ram_.write(SP, uint8_t(temp));
 
     }
     void EX_SP_IY()
@@ -375,8 +381,8 @@ public:
 
         IY = (int16_t)(cpu_ram_.read(SP+1)) << 8 | (int16_t)(cpu_ram_.read(SP));
         
-        cpu_ram_.write(SP+1, uint8_t(IY >> 8));
-        cpu_ram_.write(SP, uint8_t(IY));
+        cpu_ram_.write(SP+1, uint8_t(temp >> 8));
+        cpu_ram_.write(SP, uint8_t(temp));
 
     }
     void LDI()
