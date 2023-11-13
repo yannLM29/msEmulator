@@ -41,7 +41,7 @@ public:     // a changer
         int opcode_length;
         void(z80::*from)(void) = nullptr;
         void(z80::*to)(void) = nullptr;
-        void(z80::*instruction)(void) = nullptr;
+        int(z80::*instruction)(void) = nullptr;
         int cycles;
 
     };
@@ -144,6 +144,10 @@ public:
     void DataFromRegHLp()
     {
         to_read = HLp.r16;
+    }
+    void DataFromI()
+    {
+        to_read = (uint16_t)I;
     }
     
 
@@ -289,7 +293,7 @@ public:
     {
         cpu_ram_.write(IY + ((uint16_t)current_instruction_words.back() << 8 | (uint16_t)current_instruction_words[current_instruction_words.size()-1]), (uint8_t)to_write);
     }
-    void DataToSPaddr()
+    void DataToSPaddr() // useless 
     {
         cpu_ram_.write(SP, (uint8_t)to_write);
     }
@@ -301,60 +305,100 @@ public:
     }
 
     // ---------------- Instructions ----------------
+    // -------- Empty --------
+    void no_data()
+    {
+
+    }
+    int TO_IMPLEMENT()
+    {
+        std::cout << "need implement\n";
+    }
+    int no()
+    {
+
+    }
+    
+    // -------- Redirect to other tables --------
+    int TABLE_CB()
+    {
+        std::cout << "call to bit func\n";
+    }
+    int TABLE_IX()
+    {
+        std::cout << "call to IX func\n";
+    }
+    int TABLE_IY()
+    {
+        std::cout << "call to IY func\n";
+    }
+    int TABLE_Misc()
+    {
+        std::cout << "call to misc func\n";
+    }
+
+
     // -------- Load Groups --------
-    void LD()
+    int LD()
     {
         to_write = to_read;
+        return 0;
     }
-    void PUSH()
+    int PUSH()
     {
         SP--;
         cpu_ram_.write(SP, (uint8_t)(to_read >> 8));
         SP--;
         cpu_ram_.write(SP, (uint8_t)to_read);
+
+        return 0;
     }
-    void POP()
+    int POP()
     {
         to_write = (uint16_t)cpu_ram_.read(SP);
         SP++;
         to_write |= (uint16_t)cpu_ram_.read(SP) << 8;
         SP++;
+    
+        return 0;
     }
 
     // -------- Exchange, Transfert and Search Group
     // Les fonctions ci-dessous n'utilisent pas l'adressage car celui-ci n'est pas nécessaire ou pas adapté 
-    void EX_DE_HL()
+    int EX_DE_HL()
     {
         auto temp = HL;
         HL = DE;
         DE = temp;
 
+        return 0;
+
     }
-    void EX_AF_AFp()
+    int EX_AF_AFp()
     {
         auto temp = AF;
         AF = *((Register2x8b_with_flag*)&AFp);
         AFp = *((Register2x8b*)&temp);
+
+        return 0;
     }
-    void EXX_BC()
+    int EXX()
     {
         auto temp = BC;
         BC = BCp;
         BCp = temp;
-    }
-    void EXX_DE()
-    {
-        auto temp = DE;
+
+        temp = DE;
         DE = DEp;
         DEp = temp;
-    }
-    void EXX_HL()
-    {
-        auto temp = HL;
+
+        temp = HL;
         HL = HLp;
         HLp = temp;
+
+        return 0;
     }
-    void EX_SP_HL()
+    int EX_SP_HL()
     {
         auto temp = HL;
 
@@ -364,8 +408,10 @@ public:
         cpu_ram_.write(SP+1, temp.r8.msb);
         cpu_ram_.write(SP, temp.r8.lsb);
 
+        return 0;
+
     }
-    void EX_SP_IX()
+    int EX_SP_IX()
     {
         auto temp = IX;
 
@@ -374,8 +420,10 @@ public:
         cpu_ram_.write(SP+1, uint8_t(temp >> 8));
         cpu_ram_.write(SP, uint8_t(temp));
 
+        return 0;
+
     }
-    void EX_SP_IY()
+    int EX_SP_IY()
     {
         auto temp = IY;
 
@@ -384,8 +432,10 @@ public:
         cpu_ram_.write(SP+1, uint8_t(temp >> 8));
         cpu_ram_.write(SP, uint8_t(temp));
 
+        return 0;
+
     }
-    void LDI()
+    int LDI()
     {
         cpu_ram_.write(DE.r16, cpu_ram_.read(HL.r16));
         DE.r16++;
@@ -395,8 +445,10 @@ public:
         AF.r8.lsb.H = 0;
         AF.r8.lsb.PV = BC.r16 != 0 ? 1 : 0;
         AF.r8.lsb.N = 0;
+
+        return 0;
     }
-    void LDIR()
+    int LDIR()
     {
         while (BC.r16 != 0)
         {
@@ -406,7 +458,7 @@ public:
         // cycles ??
         
     }
-    void LDD()
+    int LDD()
     {
         cpu_ram_.write(DE.r16, cpu_ram_.read(HL.r16));
         DE.r16--;
@@ -416,8 +468,10 @@ public:
         AF.r8.lsb.H = 0;
         AF.r8.lsb.PV = BC.r16 != 0 ? 1 : 0;
         AF.r8.lsb.N = 0;
+
+        return 0;
     }
-    void LDDR()
+    int LDDR()
     {
         while (BC.r16 != 0)
         {
@@ -425,9 +479,10 @@ public:
         }
 
         // cycles ??
+        return 0;
         
     }
-    void CPI()
+    int CPI()
     {
         int result = (int)AF.r8.msb - int(cpu_ram_.read(HL.r16));
         HL.r16++;
@@ -439,29 +494,37 @@ public:
         AF.r8.lsb.PV = BC.r16 != 0 ? 1 : 0;
         AF.r8.lsb.N = 1; 
 
+        return 0;
     }
-    void CPIR()
+    int CPIR()
+    {
+        while (BC.r16 != 0)
+        {
+            CPI();
+        }
+    
+        return 0;
+    }
+    int CPD()
     {
 
+        return 0;
     }
-    void CPD()
+    int CPDR()
     {
 
-    }
-    void CPDR()
-    {
-
+        return 0;
     }
 
 
 
 
     // -------- Logic Groups --------
-    void ADD_A()
+    int ADD()
     {
         uint16_t extended_result = (uint16_t)AF.r8.msb + to_read ;
 
-        AF.r8.msb += uint8_t(to_read);
+        to_write += to_read;
 
         AF.r8.lsb.S = AF.r8.msb & 0x80 ? 1 : 0;
         AF.r8.lsb.C = (int(AF.r8.msb) + int(to_read) > 0xFF) ? 1 : 0;
@@ -470,9 +533,9 @@ public:
         AF.r8.lsb.N = 0;
         AF.r8.lsb.C = extended_result & 0x0100;     // A vérifier
         
-
+        return 0;
     }
-    void ADC_A()
+    int ADC_A()
     {
         uint16_t extended_result = (uint16_t)AF.r8.msb + to_read + AF.r8.lsb.C ;
 
@@ -484,8 +547,10 @@ public:
         AF.r8.lsb.PV = extended_result > 0xFF ? 1 : 0;
         AF.r8.lsb.N = 0;
         AF.r8.lsb.C = extended_result & 0x0100;
+
+        return 0;
     }
-    void INC_8bit()
+    int INC_8bit()
     {
         if(to_write == 0xFF)
         {
@@ -498,8 +563,9 @@ public:
             AF.r8.lsb.C = 0;
         }
         
+        return 0;
     }
-    void INC_16bit()
+    int INC_16bit()
     {
         if(to_write == 0xFFFF)
         {
@@ -511,8 +577,10 @@ public:
             to_write = to_read + 1;
             AF.r8.lsb.C = 0;
         }
+
+        return 0;
     }
-    void DEC()
+    int DEC()
     {
         if(to_write == 0x00)
         {
@@ -524,6 +592,8 @@ public:
             to_write = to_read - 1;
             AF.r8.lsb.N = 0;
         }
+
+        return 0;
         
     }
     // .....
@@ -531,46 +601,63 @@ public:
 
 
     // -------- General-Purpose Arithmetic and CPU Control Groups --------
-    void DAA()
+    int DAA()
     {
 
+        return 0;
     }
-    void CPL()
+    int CPL()
     {
         AF.r8.msb = ~AF.r8.msb;
 
         AF.r8.lsb.H = 1;
         AF.r8.lsb.N = 1;
+
+        return 0;
     }
-    void NEG()
+    int NEG()
     {
         // AF.r8.msb |= ~(AF.r8.msb & 0x80);
 
+        return 0;
     }
-    void CCF()
+    int CCF()
     {
         AF.r8.lsb.H = AF.r8.lsb.C;
         AF.r8.lsb.N = 0;
         AF.r8.lsb.C = ~AF.r8.lsb.C;
+
+        return 0;
     }
-    void SCF()
+    int SCF()
     {
         AF.r8.lsb.H = 0;
         AF.r8.lsb.N = 0;
         AF.r8.lsb.C = 1;
-    }
-    void NOP()
-    {
 
+        return 0;
     }
-    void HALT()
+    int NOP()
     {
-        
+        return 0;
+    }
+    int HALT()
+    {
+        return 0;
     }
 
 
-    void fetchAndExecute()
+
+    // -------- Rotate and shift Groups --------
+
+
+
+
+
+    int fetchAndExecute()
     {
+        int instruction_cycles = 0;
+
         current_instruction_words.clear();
         current_instruction_words.emplace_back(cartridge_->read(PC));
         
@@ -597,25 +684,34 @@ public:
         std::cout << "\n";
 
         (this->*current_instruction_type->from)();
-        (this->*current_instruction_type->instruction)();
+        instruction_cycles = (this->*current_instruction_type->instruction)();
         (this->*current_instruction_type->to)();
 
         PC += current_instruction_type->opcode_length;
         
-        cycles+= current_instruction_type->cycles;
+        instruction_cycles += current_instruction_type->cycles;
 
-        
+        return instruction_cycles;        
     }
 
     void executeCartridgeProgram()
     {
         PC = 0;
+        int instruction_cycles = 0;
+
         do
         {
-           fetchAndExecute();
-        } while (PC < 2 || current_instruction_words[0] != 0);
-        
-        
+            if(instruction_cycles == 0)
+            {
+                instruction_cycles = fetchAndExecute() - 1;
+            }
+            else
+            {
+                instruction_cycles--;
+            }
+
+        } while (PC < 20 && current_instruction_words[0] != 0);
+
     }
 
     void plugCartridge(Cartridge *cartridge)

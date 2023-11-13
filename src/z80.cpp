@@ -6,7 +6,7 @@ namespace ms
 z80::z80(Ram &cpu_ram) : cpu_ram_(cpu_ram)
 {
     instruction_table = {
-        {"NOP", 0x00, 1, &z80::NOP, &z80::NOP, &z80::NOP, 4},
+        {"NOP", 0x00, 1, &z80::no_data, &z80::no_data, &z80::NOP, 4},
         {"LD BC,NN", 0x01, 3, &z80::DataFromNN, &z80::DataToRegBC, &z80::LD, 10},
         {"LD (BC),A", 0x02, 1, &z80::DataFromRegA, &z80::DataToBCaddr, &z80::LD, 7},
         {"LD B,N", 0x06, 2, &z80::DataFromN, &z80::DataToRegB, &z80::LD, 7},
