@@ -450,12 +450,15 @@ public:
     }
     int LDIR()
     {
+        int cycles = BC.r16 == 0 ? 4 : 0;
+
         while (BC.r16 != 0)
         {
             LDI();
+            cycles += 5;
         }
 
-        // cycles ??
+        return cycles;
         
     }
     int LDD()
@@ -473,13 +476,15 @@ public:
     }
     int LDDR()
     {
+        int cycles = BC.r16 == 0 ? 4 : 0;
+
         while (BC.r16 != 0)
         {
             LDD();
+            cycles += 5;
         }
 
-        // cycles ??
-        return 0;
+        return cycles;
         
     }
     int CPI()
@@ -490,7 +495,7 @@ public:
 
         AF.r8.lsb.S = result < 0 ? 1 : 0;
         AF.r8.lsb.Z = result == 0 ? 1 : 0;
-        // AF.r8.lsb.H ???
+        AF.r8.lsb.H = AF.r8.msb & 0x0F < cpu_ram_.read(HL.r16) & 0x0F ? 1 : 0;          // a verifer
         AF.r8.lsb.PV = BC.r16 != 0 ? 1 : 0;
         AF.r8.lsb.N = 1; 
 
@@ -498,22 +503,41 @@ public:
     }
     int CPIR()
     {
+        int cycles = BC.r16 == 0 ? 4 : 0;
+
         while (BC.r16 != 0)
         {
             CPI();
+            cycles += 5;
         }
     
-        return 0;
+        return cycles;
     }
     int CPD()
     {
+        int result = (int)AF.r8.msb - int(cpu_ram_.read(HL.r16));
+        HL.r16--;
+        BC.r16--;
+
+        AF.r8.lsb.S = result < 0 ? 1 : 0;
+        AF.r8.lsb.Z = result == 0 ? 1 : 0;
+        AF.r8.lsb.H = AF.r8.msb & 0x0F < cpu_ram_.read(HL.r16) & 0x0F ? 1 : 0;          //a verifier
+        AF.r8.lsb.PV = BC.r16 != 0 ? 1 : 0;
+        AF.r8.lsb.N = 1; 
 
         return 0;
     }
     int CPDR()
     {
+        int cycles = BC.r16 == 0 ? 4 : 0;
 
-        return 0;
+        while (BC.r16 != 0)
+        {
+            CPD();
+            cycles += 5;
+        }
+    
+        return cycles;
     }
 
 
@@ -524,9 +548,10 @@ public:
     {
         uint16_t extended_result = (uint16_t)AF.r8.msb + to_read ;
 
-        to_write += to_read;
+        AF.r8.msb += (uint8_t)to_read;       
 
         AF.r8.lsb.S = AF.r8.msb & 0x80 ? 1 : 0;
+        AF.r8.lsb.Z = AF.r8.msb == 0 ? 1 : 0;
         AF.r8.lsb.C = (int(AF.r8.msb) + int(to_read) > 0xFF) ? 1 : 0;
         // AF.r8.lsb.H = ???
         AF.r8.lsb.PV = extended_result > 0xFF ? 1 : 0;
@@ -535,13 +560,14 @@ public:
         
         return 0;
     }
-    int ADC_A()
+    int ADC()
     {
         uint16_t extended_result = (uint16_t)AF.r8.msb + to_read + AF.r8.lsb.C ;
 
         AF.r8.msb += uint8_t(to_read) + AF.r8.lsb.C;
 
         AF.r8.lsb.S = AF.r8.msb & 0x80 ? 1 : 0;
+        AF.r8.lsb.Z = AF.r8.msb == 0 ? 1 : 0;
         AF.r8.lsb.C = (int(AF.r8.msb) + int(to_read) > 0xFF) ? 1 : 0;
         // AF.r8.lsb.H = ???
         AF.r8.lsb.PV = extended_result > 0xFF ? 1 : 0;
@@ -550,6 +576,66 @@ public:
 
         return 0;
     }
+    int SUB()
+    {
+        uint16_t extended_result = (uint16_t)AF.r8.msb - to_read ;
+
+        AF.r8.msb -= (uint8_t)to_read; 
+
+        AF.r8.lsb.S = AF.r8.msb & 0x80 ? 1 : 0;
+        AF.r8.lsb.Z = AF.r8.msb == 0 ? 1 : 0;
+        AF.r8.lsb.C = (int(AF.r8.msb) + int(to_read) > 0xFF) ? 1 : 0;           // 2x C ???
+        // AF.r8.lsb.H = ???
+        AF.r8.lsb.PV = extended_result > 0xFF ? 1 : 0;
+        AF.r8.lsb.N = 0;
+        AF.r8.lsb.C = extended_result & 0x0100;     // A vérifier
+
+        return 0;
+    }
+    int SBC()
+    {
+
+        return 0;
+    }   
+    int AND()
+    {
+
+        return 0;
+    }
+    int OR()
+    {
+        uint16_t extended_result = AF.r8.msb | (uint8_t)to_read;        
+        AF.r8.msb |= (uint8_t)to_read;
+
+        AF.r8.lsb.S = AF.r8.msb & 0x80 ? 1 : 0;
+        AF.r8.lsb.Z = AF.r8.msb == 0 ? 1 : 0;
+        AF.r8.lsb.H = 0;
+        AF.r8.lsb.PV = extended_result > 0xFF ? 1 : 0;
+        AF.r8.lsb.N = 0;
+        AF.r8.lsb.C = 0;
+
+        return 0;
+    }
+    int XOR()
+    {
+        AF.r8.msb ^= (uint8_t)to_read;
+
+        AF.r8.lsb.S = AF.r8.msb & 0x80 ? 1 : 0;
+        AF.r8.lsb.Z = AF.r8.msb == 0 ? 1 : 0;
+        AF.r8.lsb.H = 0;
+        AF.r8.lsb.PV = !(AF.r8.msb % 2);
+        AF.r8.lsb.N = 0;
+        AF.r8.lsb.C = 0;
+
+        return 0;
+    }
+    int CP()
+    {
+
+        return 0;
+    }
+
+
     int INC_8bit()
     {
         if(to_write == 0xFF)
