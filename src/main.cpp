@@ -11,7 +11,7 @@ int main()
 {
     ms::Ram main_ram(64, 0);
     ms::z80 f(main_ram);
-    ms::Cartridge c("./rom2.bin");
+    ms::Cartridge c("./rom4.bin");
     // auto cartridge = std::make_shared<ms::Cartridge>("./rom1.ms");
     f.plugCartridge(&c);
     
@@ -21,7 +21,17 @@ int main()
     std::cout << "\nROM: ";
     a->showCartridgeData(c, 0, 64);
 
-    f.executeCartridgeProgram();
+    f.executeStepCartridgeProgram();
+
+    do
+    {
+        getchar();
+        a->showCurrentInstruction(f);
+        a->showZ80Status(f);
+        a->showCartridgeData(c, 0, 64);
+
+    }while (!f.executeStepCartridgeProgram());
+    
 
     // a->showZ80Status(f);
 

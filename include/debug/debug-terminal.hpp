@@ -68,6 +68,11 @@ public:
         std::cout << "\n";
     }
 
+    void showCurrentInstruction(const z80 &processor)
+    {
+        auto instruction = processor.instruction_table[processor.current_instruction_words[0]];
+        std::cout << instruction.instruction_name << "\n";
+    }
 };
 
 

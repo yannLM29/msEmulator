@@ -29,6 +29,7 @@ public:     // a changer
 
     uint16_t to_read;
     uint16_t to_write;
+    bool condition;
 
 
     int cycles;
@@ -103,7 +104,7 @@ public:
     {
         to_read = (uint16_t)R;
     }
-
+    
     // -- 16 bits --
     void DataFromRegAF()
     {
@@ -144,6 +145,10 @@ public:
     void DataFromRegHLp()
     {
         to_read = HLp.r16;
+    }
+    void DataFromRegSP()
+    {
+        to_read = SP;
     }
     void DataFromI()
     {
@@ -187,7 +192,12 @@ public:
         to_read = (uint16_t)cpu_ram_.read(IY + ((uint16_t)current_instruction_words.back() << 8 | (uint16_t)current_instruction_words[current_instruction_words.size()-1]));
     }
 
-
+    // ---- IO ----    
+    void DataFromNIOaddr()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        to_read = 0;
+    }
 
     // -------- DataTo --------
     // ---- Registers ----
@@ -298,6 +308,40 @@ public:
         cpu_ram_.write(SP, (uint8_t)to_write);
     }
 
+    // -------- Condition --------
+    void ZCondition()
+    {
+        condition = AF.r8.lsb.Z;
+    }
+    void NZCondition()
+    {
+        condition = !AF.r8.lsb.Z;
+    }
+    void CCondition()
+    {
+        condition = AF.r8.lsb.C;
+    }
+    void NCCondition()
+    {
+        condition = !AF.r8.lsb.C;
+    }
+    void POCondition()
+    {
+        condition = !AF.r8.lsb.PV;
+    }
+    void PECondition()
+    {
+        condition = AF.r8.lsb.PV;
+    }
+    void PCondition()
+    {
+        condition = !AF.r8.lsb.N;
+    }
+    void MCondition()
+    {
+        condition = AF.r8.lsb.N;
+    }
+
     // ---------------- Opcodes analysers ----------------
     uint8_t get_b()
     {
@@ -310,11 +354,16 @@ public:
     {
 
     }
-    int TO_IMPLEMENT()
+    void TO_IMPLEMENT()
     {
-        std::cout << "need implement\n";
+        std::cout << "TO_IMPLEMENT\n";
     }
-    int no()
+    int INSTRUCTION_TO_IMPLEMENT()
+    {
+        std::cout << "INSTRUCTION_TO_IMPLEMENT\n";
+        return 0;
+    }
+    void no()
     {
 
     }
@@ -323,18 +372,22 @@ public:
     int TABLE_CB()
     {
         std::cout << "call to bit func\n";
+        return 0;
     }
     int TABLE_IX()
     {
         std::cout << "call to IX func\n";
+        return 0;
     }
     int TABLE_IY()
     {
         std::cout << "call to IY func\n";
+        return 0;
     }
     int TABLE_Misc()
     {
         std::cout << "call to misc func\n";
+        return 0;
     }
 
 
@@ -635,7 +688,11 @@ public:
         return 0;
     }
 
+    int INC()
+    {
 
+        return 0;
+    }
     int INC_8bit()
     {
         if(to_write == 0xFF)
@@ -731,14 +788,151 @@ public:
     {
         return 0;
     }
+    int DI()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int EI()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int IM()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
 
 
 
     // -------- Rotate and shift Groups --------
+    int RLCA()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int RLA()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int RRCA()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int RRA()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int RLC()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int RL()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int RRC()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int RR()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int SLA()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int SRA()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int SRL()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int RLD()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int RRD()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+
+    // -------- Jump group --------
+    int JP()
+    {
+        if(condition)
+            PC = to_read;
+
+        return 0;
+    }
+    int JR()
+    {
+        if(condition)
+            PC = PC + to_read;
+
+        return 0;
+    }
+    int DJNZ()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
 
 
+    // -------- Call and Return group --------
+    int CALL()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int RET()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int RETI()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int RETN()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int RST()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
 
-
+    // -------- Input Output group --------
+    int IN()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
+    int OUT()
+    {
+        std::cout << "NOT IMPLEMENTED\n";
+        return 0;
+    }
 
     int fetchAndExecute()
     {
@@ -747,16 +941,11 @@ public:
         current_instruction_words.clear();
         current_instruction_words.emplace_back(cartridge_->read(PC));
         
-        std::cout << "PC = " << (int)PC << "\n";
-        std::cout << "reading " << current_instruction_words[0] << "\n";
-        
         // auto current_instruction_type = instruction_table[current_instruction_words[0]];
         // Solution temporaire a remplacer par la solution ci-dessus
         auto current_instruction_type = std::find_if(instruction_table.begin(), instruction_table.end(), [&](const auto &ins){
             return ins.opcode_1st_byte == current_instruction_words[0];
         });
-
-        std::cout << "executing " << current_instruction_type->instruction_name << "\n";
 
         for(int i = PC+1; i < PC + current_instruction_type->opcode_length; i++)
         {
@@ -787,8 +976,13 @@ public:
 
         do
         {
-            if(instruction_cycles == 0)
+            
+            if(instruction_cycles <= 0)
             {
+                to_read = 0;
+                to_write = 0;
+                condition = true;
+
                 instruction_cycles = fetchAndExecute() - 1;
             }
             else
@@ -798,6 +992,16 @@ public:
 
         } while (PC < 20 && current_instruction_words[0] != 0);
 
+    }
+
+    int executeStepCartridgeProgram()
+    {
+        fetchAndExecute();
+
+        if(current_instruction_words[0] == 0x00)
+            return 1;
+
+        return 0;
     }
 
     void plugCartridge(Cartridge *cartridge)

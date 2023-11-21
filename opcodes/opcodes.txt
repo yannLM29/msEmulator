@@ -192,15 +192,15 @@
         CP A                    ; BF
         RET NZ                  ; C0
         POP BC                  ; C1
-        JP NZ,$+3               ; C2
-        JP $+3                  ; C3
+        JP NZ,NN                ; C2
+        JP NN                   ; C3
         CALL NZ,NN              ; C4 XX XX
         PUSH BC                 ; C5
         ADD A,N                 ; C6 XX
         RST 0                   ; C7
         RET Z                   ; C8
         RET                     ; C9
-        JP Z,$+3                ; CA
+        JP Z,NN                ; CA
         RLC B                   ; CB 00
         RLC C                   ; CB 01
         RLC D                   ; CB 02
@@ -455,7 +455,7 @@
         RST 8H                  ; CF 
         RET NC                  ; D0
         POP DE                  ; D1
-        JP NC,$+3               ; D2
+        JP NC,NN               ; D2
         OUT (N),A               ; D3 XX
         CALL NC,NN              ; D4 XX XX
         CALL NC,NN              ; D4 XX XX
@@ -464,7 +464,7 @@
         RST 10H                 ; D7
         RET C                   ; D8
         EXX                     ; D9
-        JP C,$+3                ; DA
+        JP C,NN                ; DA
         IN A,(N)                ; DB XX
         CALL C,NN               ; DC XX XX
         ADD IX,BC               ; DD 09
@@ -540,7 +540,7 @@
         RST 18H                 ; DF
         RET PO                  ; E0
         POP HL                  ; E1
-        JP PO,$+3               ; E2
+        JP PO,NN               ; E2
         EX (SP),HL              ; E3
         CALL PO,NN              ; E4 XX XX
         PUSH HL                 ; E5
@@ -548,7 +548,7 @@
         RST 20H                 ; E7
         RET PE                  ; E8
         JP (HL)                 ; E9
-        JP PE,$+3               ; EA
+        JP PE,NN               ; EA
         EX DE,HL                ; EB
         CALL PE,NN              ; EC XX XX
         IN B,(C)                ; ED 40
@@ -609,7 +609,7 @@
         RST 28H                 ; EF
         RET P                   ; F0
         POP AF                  ; F1
-        JP P,$+3                ; F2
+        JP P,NN                ; F2
         DI                      ; F3
         CALL P,NN               ; F4 XX XX
         PUSH AF                 ; F5
@@ -617,7 +617,7 @@
         RST 30H                 ; F7
         RET M                   ; F8
         LD SP,HL                ; F9
-        JP M,$+3                ; FA
+        JP M,NN                ; FA
         EI                      ; FB
         CALL M,NN               ; FC XX XX
         ADD IY,BC               ; FD 09
